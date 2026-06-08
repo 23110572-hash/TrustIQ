@@ -15,7 +15,7 @@
  */
 
 // Base URL for the TrustIQ API. Override by setting window.TRUSTIQ_API.
-const API_BASE = window.TRUSTIQ_API || "http://127.0.0.1:8000";
+const API_BASE = window.TRUSTIQ_API || "https://trustiq-67h0.onrender.com";
 const api = axios.create({
   baseURL: API_BASE,
   timeout: 8000

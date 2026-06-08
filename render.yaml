@@ -1,4 +1,8 @@
 services:
+  - type: redis
+    name: trustiq-redis
+    ipAllowList: [] # Allows internal connections
+    plan: free
   - type: web
     name: trustiq-backend
     env: docker
@@ -6,9 +10,15 @@ services:
     dockerfilePath: backend/Dockerfile
     envVars:
       - key: REDIS_HOST
-        value: redis
+        fromService:
+          type: redis
+          name: trustiq-redis
+          property: host
       - key: REDIS_PORT
-        value: 6379
+        fromService:
+          type: redis
+          name: trustiq-redis
+          property: port
       - key: JWT_SECRET_KEY
         value: trustiq-secure-key-123
       - key: DATABASE_URL

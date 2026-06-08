@@ -1,0 +1,62 @@
+# TrustIQ full stack: PostgreSQL + Redis + FastAPI backend + React frontend.
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: trustiq_postgres
+    environment:
+      POSTGRES_DB: trustiq
+      POSTGRES_USER: trustiq
+      POSTGRES_PASSWORD: trustiq_secret
+    ports:
+      - "5432:5432"
+    volumes:
+      - trustiq_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trustiq"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: trustiq_redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: trustiq_backend
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      # Audit trail is stored in hosted Neon PostgreSQL. Override by exporting
+      # DATABASE_URL in your shell before `docker-compose up`.
+      DATABASE_URL: ${DATABASE_URL:-postgresql://neondb_owner:npg_rt3qbWMJPA6f@ep-lively-paper-apeqjain-pooler.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require}
+      JWT_SECRET_KEY: change-this-in-production
+    ports:
+      - "8000:8000"
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: trustiq_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  trustiq_pgdata:

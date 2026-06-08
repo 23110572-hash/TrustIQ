@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: trustiq-backend
+    env: docker
+    dockerContext: .
+    dockerfilePath: backend/Dockerfile
+    envVars:
+      - key: REDIS_HOST
+        value: redis
+      - key: REDIS_PORT
+        value: 6379
+      - key: JWT_SECRET_KEY
+        value: trustiq-secure-key-123
+      - key: DATABASE_URL
+        sync: false

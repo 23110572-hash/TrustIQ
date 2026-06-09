@@ -1,9 +1,3 @@
-"""Train an Isolation Forest on synthetic behavioural data.
-
-Generates (or loads) labelled events, engineers features, trains an Isolation
-Forest with contamination=0.05, evaluates precision/recall against the known
-attack labels and persists the model to ``ml/models/anomaly_model.pkl``.
-"""
 from __future__ import annotations
 
 import argparse

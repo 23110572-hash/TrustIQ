@@ -309,56 +309,60 @@ trustiq/
 │   ├── synthetic_data.py · feature_engineering.py
 │   ├── train_anomaly.py · train_lstm.py · federated_sim.py
 ├── tests/                        pytest suite
-├── docker-compose.yml · start_trustiq.bat · README.md
+├── docker-compose.yml · README.md
 ```
 
 ---
 
-## 9. Quick start
+## 9. Live deployment
 
-### Option A — one click (Windows)
-```
-start_trustiq.bat
-```
-Starts the backend (8000), the SOC dashboard (3000) and the **Bank of Baroda
-simulator (9100)**, then opens them all.
+TrustIQ runs fully in the cloud — no local servers required.
 
-### Option B — manual
-```bash
-# 1. Install dependencies (Python 3.11+)
-pip install -r requirements.txt          # includes psycopg2 for Neon Postgres
+| Service | URL |
+|---------|-----|
+| **Bank of Baroda simulator** (customer view) | https://bob-simulator.vercel.app |
+| **SOC dashboard** (bank view) | https://trust-iq-three.vercel.app |
+| **TrustIQ backend API** (docs) | https://trustiq-67h0.onrender.com/docs |
 
-# 2. (optional) train the ML models — backend auto-loads them if present
-python ml/train_anomaly.py
-python ml/train_lstm.py
+| Layer | Host | Source repo |
+|-------|------|-------------|
+| TrustIQ backend (FastAPI + Redis) | Render | https://github.com/23110572-hash/TrustIQ |
+| SOC dashboard (static React) | Vercel | https://github.com/23110572-hash/TrustIQ (`frontend/`) |
+| Bank simulator (Python serverless) | Vercel | https://github.com/23110572-hash/BOB-Simulator |
+| Database (shared) | Neon PostgreSQL | — |
 
-# 3. Start the backend API
-cd backend
-uvicorn main:app --host 0.0.0.0 --port 8000      # docs at /docs
+### Environment variables to set in the hosting dashboards
 
-# 4. Serve the frontend (any static server)
-cd ../frontend
-python -m http.server 3000                       # open http://localhost:3000
+**Render — TrustIQ backend**
+| Variable | Value |
+|----------|-------|
+| `DATABASE_URL` | the Neon Postgres DSN |
+| `JWT_SECRET_KEY` | a strong secret |
+| `TRUSTIQ_API_KEY` | `bob-trustiq-live-key-2026` (must match the simulator) |
+| `REDIS_HOST` / `REDIS_PORT` | wired automatically from the Render Redis service |
 
-# 5. Start the Bank of Baroda simulator
-cd ../bank_simulator
-uvicorn server:app --host 0.0.0.0 --port 9100    # open http://localhost:9100
-```
+**Vercel — BOB simulator**
+| Variable | Value |
+|----------|-------|
+| `DATABASE_URL` | the Neon Postgres DSN (**required** — tables auto-seed on first call) |
+| `TRUSTIQ_URL` | `https://trustiq-67h0.onrender.com` |
+| `TRUSTIQ_API_KEY` | `bob-trustiq-live-key-2026` |
+| `GEMINI_API_KEY` | (optional) for AI identity-verification challenges |
+| `GEMINI_MODEL` | (optional) defaults to `gemini-2.0-flash` |
 
-### Option C — Docker (full stack incl. Postgres + Redis)
-```bash
-docker-compose up --build
-```
-
-| Service  | URL                        |
-|----------|----------------------------|
-| Bank simulator (customer view) | http://localhost:9100 |
-| SOC dashboard (bank view)      | http://localhost:3000 |
-| API docs | http://localhost:8000/docs |
-
-> **Frontend note:** the browser loads a **precompiled `bundle.js`** plus
+> **Frontend note:** the dashboard loads a **precompiled `bundle.js`** plus
 > **locally-vendored libraries** (`frontend/vendor/`). No in-browser
 > compilation, no CDN. If you edit any `*.jsx`, rebuild with `node build.js`.
+
+### Optional — run locally for development
+```bash
+pip install -r requirements.txt          # includes psycopg2 for Neon Postgres
+cd backend && uvicorn main:app --port 8000        # API docs at /docs
+cd ../frontend && python -m http.server 3000      # SOC dashboard
+cd ../bank_simulator/api && uvicorn server:app --port 9100   # bank simulator
+```
+Set `TRUSTIQ_URL=http://127.0.0.1:8000` in `bank_simulator/.env` when pointing
+the simulator at a local backend instead of the hosted one.
 
 ---
 
@@ -398,9 +402,9 @@ docker-compose up --build
 
 ## 11. Walkthrough — drive it from the Bank simulator
 
-Open the **Bank of Baroda simulator** at `http://localhost:9100`, pick any of the
+Open the **Bank of Baroda simulator** at https://bob-simulator.vercel.app, pick any of the
 10 customers, and act. Each action is silently scored by TrustIQ; watch the
-**SOC dashboard** (`http://localhost:3000`) react in real time. (The customer
+**SOC dashboard** (https://trust-iq-three.vercel.app) react in real time. (The customer
 view never shows scores — only the bank's SOC does.)
 
 | Try this | Expected outcome |

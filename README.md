@@ -20,9 +20,7 @@ real time against a durable **Digital Identity Passport**.
 ### Scope of this build
 This implementation is focused squarely on **existing retail banking customers**
 — the people who already have an account and use it every day across channels.
-It is deliberately **not** about employee/insider monitoring or new-customer
-onboarding/KYC; those are separate problems with separate owners. Keeping the
-scope tight lets TrustIQ do one thing extremely well: **know the real customer
+TrustIQ do one thing extremely well: **know the real customer
 and react the instant something stops looking like them.**
 
 ---

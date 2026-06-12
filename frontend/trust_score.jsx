@@ -70,15 +70,6 @@ function TrustScore({ onOpenCustomer }) {
 
   return (
     <React.Fragment>
-      <div className="explainer">
-        <span className="explainer-icon"><Icon name="gauge" size={20} /></span>
-        <span className="explainer-text">
-          Every account carries a living <b>Trust Score</b> from 0–100. It is not fixed —
-          the engine recalculates it on <b>every action</b> the customer takes, blending the
-          signals below. Trust is <b>slow to earn and fast to lose</b>, just like a human analyst's confidence.
-        </span>
-      </div>
-
       {/* ---- Block diagram: how the score is built ---- */}
       <div className="section">
         <div className="section-head">

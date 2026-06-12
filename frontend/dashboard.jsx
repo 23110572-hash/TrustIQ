@@ -9,7 +9,7 @@ function Dashboard() {
   const { api, Icon, eventLabel, timeAgo } = window.TrustIQ;
   const {
     CommandCenter, CustomerProfile, AlertFeed,
-    FraudRing, CompliancePanel, TrustScore,
+    FraudRing, CompliancePanel, TrustScore, Profile,
   } = window;
 
   const [nav, setNav] = React.useState("overview");
@@ -24,6 +24,7 @@ function Dashboard() {
     { key: "rings",      label: "Linked Accounts", desc: "Mule networks", icon: "share-2" },
     { key: "compliance", label: "Compliance", desc: "DPDP & RBI", icon: "scale" },
     { key: "audit",      label: "History", desc: "Every decision", icon: "scroll-text" },
+    { key: "account",    label: "My Profile", desc: "Your SOC profile", icon: "user" },
   ];
 
   const openProfile = (id) => { setSelectedCustomer(id); setNav("profile"); };
@@ -74,7 +75,8 @@ function Dashboard() {
 
         <div className="sidebar-spacer" />
 
-        <div className="sidebar-user">
+        <div className="sidebar-user" onClick={() => setNav("account")}
+             style={{ cursor: "pointer" }} role="button" tabIndex={0}>
           <div className="user-avatar">FA</div>
           <div>
             <div className="user-name">Fraud Analyst</div>
@@ -95,20 +97,11 @@ function Dashboard() {
         <div className="content">
           {nav === "overview" && <CommandCenter onOpenCustomer={openProfile} />}
           {nav === "trust" && <TrustScore onOpenCustomer={openProfile} />}
+          {nav === "account" && <Profile />}
           {nav === "profile" && <CustomerProfile customerId={selectedCustomer} onBack={() => setNav("overview")} />}
 
           {nav === "alerts" && (
-            <React.Fragment>
-              <div className="explainer">
-                <span className="explainer-icon"><Icon name="info" size={20} /></span>
-                <span className="explainer-text">
-                  Every suspicious event lands here as a clear incident: <b>who</b> it affects,
-                  <b> how serious</b> it is, <b>why</b> we flagged it, and <b>what to do</b>. Click any
-                  alert to open the customer.
-                </span>
-              </div>
-              <div className="section"><div className="alerts-full"><AlertFeed onOpenCustomer={openProfile} /></div></div>
-            </React.Fragment>
+            <div className="section"><div className="alerts-full"><AlertFeed onOpenCustomer={openProfile} /></div></div>
           )}
 
           {nav === "rings" && <FraudRing />}
@@ -116,13 +109,6 @@ function Dashboard() {
 
           {nav === "audit" && (
             <React.Fragment>
-              <div className="explainer">
-                <span className="explainer-icon"><Icon name="info" size={20} /></span>
-                <span className="explainer-text">
-                  Every decision TrustIQ makes is recorded here and <b>can never be edited or deleted</b> —
-                  the permanent record for audits and compliance.
-                </span>
-              </div>
               <div className="section">
                 <div className="table-wrap">
                   <div className="table-head">

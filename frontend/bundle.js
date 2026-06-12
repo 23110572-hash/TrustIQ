@@ -1241,15 +1241,6 @@ function FraudRing() {
   };
   const rings = useCountUp(graph.suspicious_clusters);
   return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
-    className: "explainer"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "explainer-icon"
-  }, /*#__PURE__*/React.createElement(Icon, {
-    name: "share-2",
-    size: 20
-  })), /*#__PURE__*/React.createElement("span", {
-    className: "explainer-text"
-  }, "Fraudsters rarely act alone. This map links identities through the ", /*#__PURE__*/React.createElement("b", null, "devices, IPs, phone numbers and payees"), " they share. When several accounts cluster around the same shared attributes, it usually means a ", /*#__PURE__*/React.createElement("b", null, "mule network or fraud ring"), " \u2014 shown in red.")), /*#__PURE__*/React.createElement("div", {
     className: "section"
   }, /*#__PURE__*/React.createElement("div", {
     className: "grid grid-4"
@@ -1478,16 +1469,7 @@ function CompliancePanel() {
   const r = report;
   const explainPct = r && r.total_decisions ? Math.round(r.explainable_decisions / Math.max(r.total_decisions, r.explainable_decisions) * 100) : 100;
   const decisions = useCountUp(r ? r.total_decisions : 0);
-  return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
-    className: "explainer"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "explainer-icon"
-  }, /*#__PURE__*/React.createElement(Icon, {
-    name: "scale",
-    size: 20
-  })), /*#__PURE__*/React.createElement("span", {
-    className: "explainer-text"
-  }, "Banking AI in India must satisfy the ", /*#__PURE__*/React.createElement("b", null, "DPDP Act 2023"), " and ", /*#__PURE__*/React.createElement("b", null, "RBI"), " directions. This center shows TrustIQ's live compliance posture: personal data is masked, decisions are explainable and version-stamped, consent is tracked, and the audit trail can never be altered.")), !r ? /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/React.createElement(React.Fragment, null, !r ? /*#__PURE__*/React.createElement("div", {
     className: "section"
   }, /*#__PURE__*/React.createElement("div", {
     className: "empty"
@@ -1751,15 +1733,6 @@ function TrustScore({
   }, [load]);
   const sorted = [...accounts].sort((a, b) => a.trust_score - b.trust_score);
   return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
-    className: "explainer"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "explainer-icon"
-  }, /*#__PURE__*/React.createElement(Icon, {
-    name: "gauge",
-    size: 20
-  })), /*#__PURE__*/React.createElement("span", {
-    className: "explainer-text"
-  }, "Every account carries a living ", /*#__PURE__*/React.createElement("b", null, "Trust Score"), " from 0\u2013100. It is not fixed \u2014 the engine recalculates it on ", /*#__PURE__*/React.createElement("b", null, "every action"), " the customer takes, blending the signals below. Trust is ", /*#__PURE__*/React.createElement("b", null, "slow to earn and fast to lose"), ", just like a human analyst's confidence.")), /*#__PURE__*/React.createElement("div", {
     className: "section"
   }, /*#__PURE__*/React.createElement("div", {
     className: "section-head"
@@ -2266,6 +2239,258 @@ function CustomerCard({
 window.CommandCenter = CommandCenter;
 window.CustomerCard = CustomerCard;
 
+/* ===== profile.jsx ===== */
+
+function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
+/**
+ * Profile - the signed-in fraud analyst's own profile page.
+ *
+ * Shows who is operating the console (identity, team, shift, clearance) plus a
+ * few live workload numbers pulled from the platform so the page reflects the
+ * real state of the floor rather than static placeholders.
+ */
+function Profile() {
+  const {
+    api,
+    Icon,
+    useCountUp,
+    timeAgo
+  } = window.TrustIQ;
+
+  // The operator currently signed in to the SOC console.
+  const operator = {
+    name: "Fraud Analyst",
+    role: "Senior Fraud & Identity-Trust Analyst",
+    team: "Identity Trust SOC",
+    employeeId: "BOB-SOC-2026",
+    email: "fraud.soc@bankofbaroda.in",
+    location: "Mumbai · BKC Operations Hub",
+    shift: "Day shift · 09:00 – 18:00 IST",
+    clearance: "Tier 3 · Fraud Operations"
+  };
+  const [stats, setStats] = React.useState(null);
+  const [passports, setPassports] = React.useState([]);
+  React.useEffect(() => {
+    let active = true;
+    const load = async () => {
+      try {
+        const [s, p] = await Promise.all([api.get("/api/dashboard/stats").catch(() => ({
+          data: null
+        })), api.get("/api/passports").catch(() => ({
+          data: []
+        }))]);
+        if (!active) return;
+        setStats(s.data);
+        setPassports(p.data || []);
+      } catch (e) {}
+    };
+    load();
+    const id = setInterval(load, 6000);
+    return () => {
+      active = false;
+      clearInterval(id);
+    };
+  }, []);
+
+  // Derive live workload numbers from whatever the platform reports.
+  const monitored = passports.length;
+  const needsReview = passports.filter(p => p.trust_score < 60).length;
+  const decisions = stats ? stats.total_events || stats.total_decisions || stats.events_today || 0 : 0;
+  const alerts = stats ? stats.active_alerts || stats.alerts || stats.total_alerts || 0 : 0;
+  const tiles = [{
+    icon: "users",
+    tone: "accent",
+    value: monitored,
+    label: "Accounts monitored",
+    desc: "Identities under watch"
+  }, {
+    icon: "alert-triangle",
+    tone: "high",
+    value: needsReview,
+    label: "Need review",
+    desc: "Trust below 60"
+  }, {
+    icon: "scroll-text",
+    tone: "safe",
+    value: decisions,
+    label: "Decisions seen",
+    desc: "Scored this session"
+  }, {
+    icon: "siren",
+    tone: "critical",
+    value: alerts,
+    label: "Open alerts",
+    desc: "Awaiting triage"
+  }];
+  const details = [{
+    icon: "id-card",
+    name: "Employee ID",
+    value: operator.employeeId
+  }, {
+    icon: "mail",
+    name: "Email",
+    value: operator.email
+  }, {
+    icon: "users",
+    name: "Team",
+    value: operator.team
+  }, {
+    icon: "map-pin",
+    name: "Location",
+    value: operator.location
+  }, {
+    icon: "clock",
+    name: "Shift",
+    value: operator.shift
+  }, {
+    icon: "shield-check",
+    name: "Clearance",
+    value: operator.clearance
+  }];
+  const permissions = [{
+    name: "View customer passports",
+    detail: "Read identity trust scores, history and verdicts.",
+    on: true
+  }, {
+    name: "Review & triage alerts",
+    detail: "Open, acknowledge and action live fraud alerts.",
+    on: true
+  }, {
+    name: "Export audit log",
+    detail: "Download the immutable decision record (JWT-protected).",
+    on: true
+  }, {
+    name: "Inspect fraud rings",
+    detail: "View linked-account and mule-network maps.",
+    on: true
+  }, {
+    name: "Modify trust policy",
+    detail: "Change scoring weights and thresholds.",
+    on: false
+  }];
+  const initials = operator.name.split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
+  return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "ops-banner"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "profile-head"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "profile-avatar"
+  }, initials), /*#__PURE__*/React.createElement("div", {
+    className: "profile-head-text"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "ops-banner-title"
+  }, operator.name), /*#__PURE__*/React.createElement("div", {
+    className: "ops-banner-sub"
+  }, operator.role, " \xB7 ", operator.team))), /*#__PURE__*/React.createElement("span", {
+    className: "pill pill--safe"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "pill-dot dot--safe"
+  }), " On shift")), /*#__PURE__*/React.createElement("div", {
+    className: "section"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-4"
+  }, tiles.map((t, i) => /*#__PURE__*/React.createElement(ProfileTile, _extends({
+    key: t.label
+  }, t, {
+    delay: i * 60
+  }))))), /*#__PURE__*/React.createElement("div", {
+    className: "section"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "panel"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "panel-head"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "panel-title"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "user",
+    size: 18,
+    color: "#2563EB"
+  }), " Operator details")), /*#__PURE__*/React.createElement("div", {
+    className: "control-list"
+  }, details.map(d => /*#__PURE__*/React.createElement("div", {
+    key: d.name,
+    className: "control-row"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "control-status control-status--safe"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: d.icon,
+    size: 16
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "control-body"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "control-name"
+  }, d.name), /*#__PURE__*/React.createElement("div", {
+    className: "control-detail"
+  }, d.value))))))), /*#__PURE__*/React.createElement("div", {
+    className: "section"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "panel"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "panel-head"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "panel-title"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "lock",
+    size: 18,
+    color: "#2563EB"
+  }), " Access & permissions"), /*#__PURE__*/React.createElement("span", {
+    className: "panel-hint",
+    style: {
+      marginTop: 0
+    }
+  }, operator.clearance)), /*#__PURE__*/React.createElement("div", {
+    className: "control-list"
+  }, permissions.map(p => /*#__PURE__*/React.createElement("div", {
+    key: p.name,
+    className: "control-row"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: `control-status control-status--${p.on ? "safe" : "neutral"}`
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: p.on ? "check-circle" : "minus-circle",
+    size: 16
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "control-body"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "control-name"
+  }, p.name), /*#__PURE__*/React.createElement("div", {
+    className: "control-detail"
+  }, p.detail)), /*#__PURE__*/React.createElement("span", {
+    className: `pill pill--${p.on ? "safe" : "neutral"}`
+  }, /*#__PURE__*/React.createElement("span", {
+    className: `pill-dot dot--${p.on ? "safe" : "neutral"}`
+  }), p.on ? "Granted" : "Restricted")))))));
+  function ProfileTile({
+    icon,
+    tone,
+    value,
+    label,
+    desc,
+    delay
+  }) {
+    const n = useCountUp(value);
+    return /*#__PURE__*/React.createElement("div", {
+      className: "tile",
+      style: {
+        animationDelay: `${delay}ms`
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "tile-top"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: `tile-icon tile-icon--${tone}`
+    }, /*#__PURE__*/React.createElement(Icon, {
+      name: icon,
+      size: 20
+    })), /*#__PURE__*/React.createElement("span", {
+      className: "tile-value"
+    }, Math.round(n))), /*#__PURE__*/React.createElement("div", {
+      className: "tile-label"
+    }, label), /*#__PURE__*/React.createElement("div", {
+      className: "tile-desc"
+    }, desc));
+  }
+}
+window.Profile = Profile;
+
 /* ===== dashboard.jsx ===== */
 
 /**
@@ -2288,7 +2513,8 @@ function Dashboard() {
     AlertFeed,
     FraudRing,
     CompliancePanel,
-    TrustScore
+    TrustScore,
+    Profile
   } = window;
   const [nav, setNav] = React.useState("overview");
   const [selectedCustomer, setSelectedCustomer] = React.useState(null);
@@ -2324,6 +2550,11 @@ function Dashboard() {
     label: "History",
     desc: "Every decision",
     icon: "scroll-text"
+  }, {
+    key: "account",
+    label: "My Profile",
+    desc: "Your SOC profile",
+    icon: "user"
   }];
   const openProfile = id => {
     setSelectedCustomer(id);
@@ -2398,7 +2629,13 @@ function Dashboard() {
   }, item.desc))))), /*#__PURE__*/React.createElement("div", {
     className: "sidebar-spacer"
   }), /*#__PURE__*/React.createElement("div", {
-    className: "sidebar-user"
+    className: "sidebar-user",
+    onClick: () => setNav("account"),
+    style: {
+      cursor: "pointer"
+    },
+    role: "button",
+    tabIndex: 0
   }, /*#__PURE__*/React.createElement("div", {
     className: "user-avatar"
   }, "FA"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
@@ -2427,34 +2664,16 @@ function Dashboard() {
     onOpenCustomer: openProfile
   }), nav === "trust" && /*#__PURE__*/React.createElement(TrustScore, {
     onOpenCustomer: openProfile
-  }), nav === "profile" && /*#__PURE__*/React.createElement(CustomerProfile, {
+  }), nav === "account" && /*#__PURE__*/React.createElement(Profile, null), nav === "profile" && /*#__PURE__*/React.createElement(CustomerProfile, {
     customerId: selectedCustomer,
     onBack: () => setNav("overview")
-  }), nav === "alerts" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
-    className: "explainer"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "explainer-icon"
-  }, /*#__PURE__*/React.createElement(Icon, {
-    name: "info",
-    size: 20
-  })), /*#__PURE__*/React.createElement("span", {
-    className: "explainer-text"
-  }, "Every suspicious event lands here as a clear incident: ", /*#__PURE__*/React.createElement("b", null, "who"), " it affects,", /*#__PURE__*/React.createElement("b", null, " how serious"), " it is, ", /*#__PURE__*/React.createElement("b", null, "why"), " we flagged it, and ", /*#__PURE__*/React.createElement("b", null, "what to do"), ". Click any alert to open the customer.")), /*#__PURE__*/React.createElement("div", {
+  }), nav === "alerts" && /*#__PURE__*/React.createElement("div", {
     className: "section"
   }, /*#__PURE__*/React.createElement("div", {
     className: "alerts-full"
   }, /*#__PURE__*/React.createElement(AlertFeed, {
     onOpenCustomer: openProfile
-  })))), nav === "rings" && /*#__PURE__*/React.createElement(FraudRing, null), nav === "compliance" && /*#__PURE__*/React.createElement(CompliancePanel, null), nav === "audit" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
-    className: "explainer"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "explainer-icon"
-  }, /*#__PURE__*/React.createElement(Icon, {
-    name: "info",
-    size: 20
-  })), /*#__PURE__*/React.createElement("span", {
-    className: "explainer-text"
-  }, "Every decision TrustIQ makes is recorded here and ", /*#__PURE__*/React.createElement("b", null, "can never be edited or deleted"), " \u2014 the permanent record for audits and compliance.")), /*#__PURE__*/React.createElement("div", {
+  }))), nav === "rings" && /*#__PURE__*/React.createElement(FraudRing, null), nav === "compliance" && /*#__PURE__*/React.createElement(CompliancePanel, null), nav === "audit" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     className: "section"
   }, /*#__PURE__*/React.createElement("div", {
     className: "table-wrap"

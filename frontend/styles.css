@@ -503,6 +503,7 @@ td .mono, th .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.85re
 .control-status--safe { background: var(--safe-bg); color: var(--safe); }
 .control-status--mid { background: var(--mid-bg); color: var(--mid); }
 .control-status--high { background: var(--high-bg); color: var(--high); }
+.control-status--neutral { background: var(--neutral-bg); color: var(--neutral); }
 .control-body { flex: 1; }
 .control-name { font-weight: 600; font-size: 0.92rem; }
 .control-reg { font-size: 0.72rem; color: var(--text-tertiary); font-weight: 500; margin-left: 0.4rem; }
@@ -588,6 +589,17 @@ td .mono, th .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.85re
   background: var(--bg-surface); border: 1px solid var(--border-medium); font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); }
 .live-toggle.on { color: var(--safe); border-color: var(--safe-border); background: var(--safe-bg); }
 .live-toggle .live-dot { background: var(--safe); }
+
+/* ---- profile (operator) header ---- */
+.profile-head { display: flex; align-items: center; gap: 1rem; }
+.profile-avatar {
+  height: 56px; width: 56px; border-radius: var(--radius-full);
+  background: var(--accent-bg); color: var(--accent);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 1.25rem; letter-spacing: 0.5px;
+  border: 1px solid var(--accent-border);
+}
+.profile-head-text { display: flex; flex-direction: column; gap: 2px; }
 
 /* ---- metrics row ---- */
 .metric-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.8rem; }

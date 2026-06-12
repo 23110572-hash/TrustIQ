@@ -20,6 +20,7 @@ const FILES = [
   "compliance_panel.jsx",
   "trust_score.jsx",
   "command_center.jsx",
+  "profile.jsx",
   "dashboard.jsx",
   "mount.jsx",
 ];

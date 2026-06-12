@@ -41,16 +41,6 @@ function CompliancePanel() {
 
   return (
     <React.Fragment>
-      <div className="explainer">
-        <span className="explainer-icon"><Icon name="scale" size={20} /></span>
-        <span className="explainer-text">
-          Banking AI in India must satisfy the <b>DPDP Act 2023</b> and <b>RBI</b> directions.
-          This center shows TrustIQ's live compliance posture: personal data is masked, decisions
-          are explainable and version-stamped, consent is tracked, and the audit trail can never
-          be altered.
-        </span>
-      </div>
-
       {!r ? (
         <div className="section"><div className="empty"><Icon name="scale" size={34} className="empty-icon" />
           <div className="empty-title">Loading posture…</div></div></div>

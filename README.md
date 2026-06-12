@@ -309,7 +309,7 @@ trustiq/
 │   ├── synthetic_data.py · feature_engineering.py
 │   ├── train_anomaly.py · train_lstm.py · federated_sim.py
 ├── tests/                        pytest suite
-├── docker-compose.yml · README.md
+├── render.yaml · README.md
 ```
 
 ---
@@ -352,17 +352,8 @@ TrustIQ runs fully in the cloud — no local servers required.
 
 > **Frontend note:** the dashboard loads a **precompiled `bundle.js`** plus
 > **locally-vendored libraries** (`frontend/vendor/`). No in-browser
-> compilation, no CDN. If you edit any `*.jsx`, rebuild with `node build.js`.
-
-### Optional — run locally for development
-```bash
-pip install -r requirements.txt          # includes psycopg2 for Neon Postgres
-cd backend && uvicorn main:app --port 8000        # API docs at /docs
-cd ../frontend && python -m http.server 3000      # SOC dashboard
-cd ../bank_simulator/api && uvicorn server:app --port 9100   # bank simulator
-```
-Set `TRUSTIQ_URL=http://127.0.0.1:8000` in `bank_simulator/.env` when pointing
-the simulator at a local backend instead of the hosted one.
+> compilation, no CDN. If you edit any `*.jsx`, rebuild with `node build.js`
+> and redeploy.
 
 ---
 
@@ -437,7 +428,7 @@ explanations) and the anomaly detector.
 **Backend:** Python 3.11 · FastAPI · Uvicorn · scikit-learn · PyTorch · NetworkX ·
 NumPy · Pandas · Redis · PostgreSQL (Neon) · psycopg2 · diffprivlib · python-jose (JWT)
 **Frontend:** React 18 · Recharts · custom CSS design system · Lucide icons · Axios
-**Infra:** Docker · docker-compose · Neon serverless Postgres
+**Infra:** Render (Docker) · Vercel · Neon serverless Postgres · Redis
 
 ---
 

@@ -77,15 +77,6 @@ function FraudRing() {
 
   return (
     <React.Fragment>
-      <div className="explainer">
-        <span className="explainer-icon"><Icon name="share-2" size={20} /></span>
-        <span className="explainer-text">
-          Fraudsters rarely act alone. This map links identities through the <b>devices, IPs,
-          phone numbers and payees</b> they share. When several accounts cluster around the same
-          shared attributes, it usually means a <b>mule network or fraud ring</b> — shown in red.
-        </span>
-      </div>
-
       <div className="section">
         <div className="grid grid-4">
           <MiniStat icon="users" tone="accent" value={graph.nodes.filter((n) => n.type === "user").length} label="Identities" />

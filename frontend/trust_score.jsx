@@ -68,8 +68,48 @@ function TrustScore({ onOpenCustomer }) {
 
   const sorted = [...accounts].sort((a, b) => a.trust_score - b.trust_score);
 
+  // Portfolio-level trust for the hero ring.
+  const avg = accounts.length ? Math.round(accounts.reduce((s, a) => s + (a.trust_score || 0), 0) / accounts.length) : 0;
+  const lowest = accounts.length ? Math.round(Math.min(...accounts.map((a) => a.trust_score || 0))) : 0;
+  const needsReview = accounts.filter((a) => (a.trust_score || 0) < 60).length;
+  const rising = accounts.filter((a) => a.trust_trend === "rising").length;
+  const falling = accounts.filter((a) => a.trust_trend === "falling").length;
+  const portTrend = falling > rising ? "falling" : rising > falling ? "rising" : "stable";
+  const heroBand = window.Roster.trustBandInfo(avg);
+  const ti = window.Roster.trendInfo(portTrend);
+
   return (
     <React.Fragment>
+      {/* ---- HERO: portfolio trust as a circular score ---- */}
+      <div className="trust-hero">
+        <ScoreRing value={avg} bandKey={heroBand.key} />
+        <div className="trust-hero-body">
+          <span className="trust-hero-eyebrow">Identity Trust · Portfolio</span>
+          <div className="trust-hero-title">{accounts.length ? `${heroBand.label} — ${avg}% average trust` : "Awaiting first activity"}</div>
+          <div className="trust-hero-sub">
+            A single living confidence score across every monitored identity. It is recalculated on
+            every action — slow to earn, fast to lose.
+          </div>
+          <div className="trust-hero-stats">
+            <div>
+              <div className="hero-stat-value">{accounts.length}</div>
+              <div className="hero-stat-label">Accounts scored</div>
+            </div>
+            <div>
+              <div className="hero-stat-value" style={{ color: window.Roster.trustColorKey(lowest) === "safe" ? "var(--safe)" : window.Roster.trustColorKey(lowest) === "mid" ? "var(--mid)" : "var(--high)" }}>{lowest}</div>
+              <div className="hero-stat-label">Lowest trust</div>
+            </div>
+            <div>
+              <div className="hero-stat-value">{needsReview}</div>
+              <div className="hero-stat-label">Need review</div>
+            </div>
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <span className={`hero-trend hero-trend--${ti.key}`}><Icon name={ti.icon} size={15} /> {ti.label}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* ---- Block diagram: how the score is built ---- */}
       <div className="section">
         <div className="section-head">
@@ -169,6 +209,26 @@ function TrustScore({ onOpenCustomer }) {
 
   function FlowArrow() {
     return <span className="flow-arrow"><Icon name="chevron-right" size={18} color="var(--text-secondary)" /></span>;
+  }
+
+  function ScoreRing({ value, bandKey }) {
+    const n = useCountUp(value);
+    const r = 66, c = 2 * Math.PI * r;
+    const pct = Math.max(0, Math.min(100, value)) / 100;
+    const offset = c * (1 - pct);
+    return (
+      <div className="score-ring">
+        <svg width="156" height="156" viewBox="0 0 156 156">
+          <circle className="score-ring-track" cx="78" cy="78" r={r} fill="none" strokeWidth="13" />
+          <circle className={`score-ring-fill score-ring-fill--${bandKey}`} cx="78" cy="78" r={r}
+            fill="none" strokeWidth="13" strokeDasharray={c} strokeDashoffset={offset} />
+        </svg>
+        <div className="score-ring-center">
+          <span className={`score-ring-num score-ring-num--${bandKey}`}>{Math.round(n)}</span>
+          <span className="score-ring-cap">out of 100</span>
+        </div>
+      </div>
+    );
   }
 }
 

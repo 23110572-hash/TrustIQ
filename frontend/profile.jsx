@@ -1,24 +1,39 @@
 /**
  * Profile - the signed-in fraud analyst's own profile page.
  *
- * Shows who is operating the console (identity, team, shift, clearance) plus a
- * few live workload numbers pulled from the platform so the page reflects the
- * real state of the floor rather than static placeholders.
+ * Editable: the operator can update their identity fields inline; changes are
+ * persisted to localStorage so they survive reloads (there is no analyst-user
+ * backend in this build). Live workload numbers come from the platform.
  */
-function Profile() {
-  const { api, Icon, useCountUp, timeAgo } = window.TrustIQ;
+const OPERATOR_KEY = "trustiq.operator.v1";
 
-  // The operator currently signed in to the SOC console.
-  const operator = {
-    name: "Fraud Analyst",
-    role: "Senior Fraud & Identity-Trust Analyst",
-    team: "Identity Trust SOC",
-    employeeId: "BOB-SOC-2026",
-    email: "fraud.soc@bankofbaroda.in",
-    location: "Mumbai · BKC Operations Hub",
-    shift: "Day shift · 09:00 – 18:00 IST",
-    clearance: "Tier 3 · Fraud Operations",
-  };
+const DEFAULT_OPERATOR = {
+  name: "Fraud Analyst",
+  role: "Senior Fraud & Identity-Trust Analyst",
+  team: "Identity Trust SOC",
+  employeeId: "BOB-SOC-2026",
+  email: "fraud.soc@bankofbaroda.in",
+  phone: "+91 22 6698 0000",
+  location: "Mumbai · BKC Operations Hub",
+  shift: "Day shift · 09:00 – 18:00 IST",
+  clearance: "Tier 3 · Fraud Operations",
+};
+
+function loadOperator() {
+  try {
+    const raw = localStorage.getItem(OPERATOR_KEY);
+    if (raw) return { ...DEFAULT_OPERATOR, ...JSON.parse(raw) };
+  } catch (e) {}
+  return { ...DEFAULT_OPERATOR };
+}
+
+function Profile() {
+  const { api, Icon, useCountUp } = window.TrustIQ;
+
+  const [operator, setOperator] = React.useState(loadOperator);
+  const [editing, setEditing] = React.useState(false);
+  const [draft, setDraft] = React.useState(operator);
+  const [saved, setSaved] = React.useState(false);
 
   const [stats, setStats] = React.useState(null);
   const [passports, setPassports] = React.useState([]);
@@ -41,15 +56,22 @@ function Profile() {
     return () => { active = false; clearInterval(id); };
   }, []);
 
-  // Derive live workload numbers from whatever the platform reports.
+  const startEdit = () => { setDraft(operator); setEditing(true); setSaved(false); };
+  const cancelEdit = () => { setEditing(false); setDraft(operator); };
+  const change = (k) => (e) => setDraft((d) => ({ ...d, [k]: e.target.value }));
+  const save = () => {
+    const next = { ...draft, name: (draft.name || "").trim() || "Fraud Analyst" };
+    setOperator(next);
+    try { localStorage.setItem(OPERATOR_KEY, JSON.stringify(next)); } catch (e) {}
+    setEditing(false); setSaved(true);
+    setTimeout(() => setSaved(false), 2600);
+  };
+
+  // Live workload numbers derived from whatever the platform reports.
   const monitored = passports.length;
   const needsReview = passports.filter((p) => p.trust_score < 60).length;
-  const decisions = stats
-    ? (stats.total_events || stats.total_decisions || stats.events_today || 0)
-    : 0;
-  const alerts = stats
-    ? (stats.active_alerts || stats.alerts || stats.total_alerts || 0)
-    : 0;
+  const decisions = stats ? (stats.total_events || stats.total_decisions || stats.events_today || 0) : 0;
+  const alerts = stats ? (stats.active_alerts || stats.alerts || stats.total_alerts || 0) : 0;
 
   const tiles = [
     { icon: "users",          tone: "accent",   value: monitored,   label: "Accounts monitored", desc: "Identities under watch" },
@@ -58,13 +80,16 @@ function Profile() {
     { icon: "siren",          tone: "critical",  value: alerts,      label: "Open alerts",        desc: "Awaiting triage" },
   ];
 
-  const details = [
-    { icon: "id-card",    name: "Employee ID",   value: operator.employeeId },
-    { icon: "mail",       name: "Email",         value: operator.email },
-    { icon: "users",      name: "Team",          value: operator.team },
-    { icon: "map-pin",    name: "Location",      value: operator.location },
-    { icon: "clock",      name: "Shift",         value: operator.shift },
-    { icon: "shield-check", name: "Clearance",   value: operator.clearance },
+  const fields = [
+    { key: "name",       icon: "user",          label: "Full name" },
+    { key: "role",       icon: "briefcase",     label: "Role" },
+    { key: "employeeId", icon: "id-card",       label: "Employee ID" },
+    { key: "email",      icon: "mail",          label: "Email" },
+    { key: "phone",      icon: "phone",         label: "Phone" },
+    { key: "team",       icon: "users",         label: "Team" },
+    { key: "location",   icon: "map-pin",       label: "Location" },
+    { key: "shift",      icon: "clock",         label: "Shift" },
+    { key: "clearance",  icon: "shield-check",  label: "Clearance" },
   ];
 
   const permissions = [
@@ -75,19 +100,24 @@ function Profile() {
     { name: "Modify trust policy",     detail: "Change scoring weights and thresholds.", on: false },
   ];
 
-  const initials = operator.name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+  const initials = (operator.name || "?").split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
 
   return (
     <React.Fragment>
       <div className="ops-banner">
-        <div className="profile-head">
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
           <span className="profile-avatar">{initials}</span>
           <div className="profile-head-text">
             <div className="ops-banner-title">{operator.name}</div>
             <div className="ops-banner-sub">{operator.role} · {operator.team}</div>
           </div>
         </div>
-        <span className="pill pill--safe"><span className="pill-dot dot--safe" /> On shift</span>
+        <div className="panel-actions">
+          {saved && <span className="pill pill--safe"><span className="pill-dot dot--safe" /> Saved</span>}
+          {!editing
+            ? <button className="btn btn--primary" onClick={startEdit}><Icon name="pencil" size={15} /> Edit profile</button>
+            : <span className="pill pill--accent"><span className="pill-dot dot--neutral" style={{ background: "var(--accent)" }} /> Editing</span>}
+        </div>
       </div>
 
       <div className="section">
@@ -99,26 +129,51 @@ function Profile() {
       <div className="section">
         <div className="panel">
           <div className="panel-head">
-            <div className="panel-title"><Icon name="user" size={18} color="#2563EB" /> Operator details</div>
-          </div>
-          <div className="control-list">
-            {details.map((d) => (
-              <div key={d.name} className="control-row">
-                <span className="control-status control-status--safe"><Icon name={d.icon} size={16} /></span>
-                <div className="control-body">
-                  <div className="control-name">{d.name}</div>
-                  <div className="control-detail">{d.value}</div>
-                </div>
+            <div className="panel-title"><Icon name="user" size={18} color="var(--accent)" /> Operator details</div>
+            {editing && (
+              <div className="panel-actions">
+                <button className="btn" onClick={cancelEdit}><Icon name="x" size={15} /> Cancel</button>
+                <button className="btn btn--primary" onClick={save}><Icon name="check" size={15} /> Save changes</button>
               </div>
-            ))}
+            )}
           </div>
+
+          {editing ? (
+            <React.Fragment>
+              <div className="profile-form">
+                {fields.map((f) => (
+                  <div key={f.key} className="form-field">
+                    <label>{f.label}</label>
+                    <input className="input" value={draft[f.key] || ""} onChange={change(f.key)}
+                      placeholder={DEFAULT_OPERATOR[f.key]} />
+                  </div>
+                ))}
+              </div>
+              <div className="form-actions">
+                <button className="btn btn--primary" onClick={save}><Icon name="check" size={15} /> Save changes</button>
+                <button className="btn" onClick={cancelEdit}><Icon name="x" size={15} /> Cancel</button>
+              </div>
+            </React.Fragment>
+          ) : (
+            <div className="control-list">
+              {fields.map((f) => (
+                <div key={f.key} className="control-row">
+                  <span className="control-status control-status--safe"><Icon name={f.icon} size={16} /></span>
+                  <div className="control-body">
+                    <div className="control-name">{f.label}</div>
+                    <div className="control-detail">{operator[f.key] || "—"}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
       <div className="section">
         <div className="panel">
           <div className="panel-head">
-            <div className="panel-title"><Icon name="lock" size={18} color="#2563EB" /> Access &amp; permissions</div>
+            <div className="panel-title"><Icon name="lock" size={18} color="var(--accent)" /> Access &amp; permissions</div>
             <span className="panel-hint" style={{ marginTop: 0 }}>{operator.clearance}</span>
           </div>
           <div className="control-list">

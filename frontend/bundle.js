@@ -1732,7 +1732,57 @@ function TrustScore({
     };
   }, [load]);
   const sorted = [...accounts].sort((a, b) => a.trust_score - b.trust_score);
+
+  // Portfolio-level trust for the hero ring.
+  const avg = accounts.length ? Math.round(accounts.reduce((s, a) => s + (a.trust_score || 0), 0) / accounts.length) : 0;
+  const lowest = accounts.length ? Math.round(Math.min(...accounts.map(a => a.trust_score || 0))) : 0;
+  const needsReview = accounts.filter(a => (a.trust_score || 0) < 60).length;
+  const rising = accounts.filter(a => a.trust_trend === "rising").length;
+  const falling = accounts.filter(a => a.trust_trend === "falling").length;
+  const portTrend = falling > rising ? "falling" : rising > falling ? "rising" : "stable";
+  const heroBand = window.Roster.trustBandInfo(avg);
+  const ti = window.Roster.trendInfo(portTrend);
   return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "trust-hero"
+  }, /*#__PURE__*/React.createElement(ScoreRing, {
+    value: avg,
+    bandKey: heroBand.key
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "trust-hero-body"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "trust-hero-eyebrow"
+  }, "Identity Trust \xB7 Portfolio"), /*#__PURE__*/React.createElement("div", {
+    className: "trust-hero-title"
+  }, accounts.length ? `${heroBand.label} — ${avg}% average trust` : "Awaiting first activity"), /*#__PURE__*/React.createElement("div", {
+    className: "trust-hero-sub"
+  }, "A single living confidence score across every monitored identity. It is recalculated on every action \u2014 slow to earn, fast to lose."), /*#__PURE__*/React.createElement("div", {
+    className: "trust-hero-stats"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "hero-stat-value"
+  }, accounts.length), /*#__PURE__*/React.createElement("div", {
+    className: "hero-stat-label"
+  }, "Accounts scored")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "hero-stat-value",
+    style: {
+      color: window.Roster.trustColorKey(lowest) === "safe" ? "var(--safe)" : window.Roster.trustColorKey(lowest) === "mid" ? "var(--mid)" : "var(--high)"
+    }
+  }, lowest), /*#__PURE__*/React.createElement("div", {
+    className: "hero-stat-label"
+  }, "Lowest trust")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "hero-stat-value"
+  }, needsReview), /*#__PURE__*/React.createElement("div", {
+    className: "hero-stat-label"
+  }, "Need review")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: `hero-trend hero-trend--${ti.key}`
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: ti.icon,
+    size: 15
+  }), " ", ti.label))))), /*#__PURE__*/React.createElement("div", {
     className: "section"
   }, /*#__PURE__*/React.createElement("div", {
     className: "section-head"
@@ -1871,6 +1921,45 @@ function TrustScore({
       size: 18,
       color: "var(--text-secondary)"
     }));
+  }
+  function ScoreRing({
+    value,
+    bandKey
+  }) {
+    const n = useCountUp(value);
+    const r = 66,
+      c = 2 * Math.PI * r;
+    const pct = Math.max(0, Math.min(100, value)) / 100;
+    const offset = c * (1 - pct);
+    return /*#__PURE__*/React.createElement("div", {
+      className: "score-ring"
+    }, /*#__PURE__*/React.createElement("svg", {
+      width: "156",
+      height: "156",
+      viewBox: "0 0 156 156"
+    }, /*#__PURE__*/React.createElement("circle", {
+      className: "score-ring-track",
+      cx: "78",
+      cy: "78",
+      r: r,
+      fill: "none",
+      strokeWidth: "13"
+    }), /*#__PURE__*/React.createElement("circle", {
+      className: `score-ring-fill score-ring-fill--${bandKey}`,
+      cx: "78",
+      cy: "78",
+      r: r,
+      fill: "none",
+      strokeWidth: "13",
+      strokeDasharray: c,
+      strokeDashoffset: offset
+    })), /*#__PURE__*/React.createElement("div", {
+      className: "score-ring-center"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: `score-ring-num score-ring-num--${bandKey}`
+    }, Math.round(n)), /*#__PURE__*/React.createElement("span", {
+      className: "score-ring-cap"
+    }, "out of 100")));
   }
 }
 
@@ -2245,29 +2334,44 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
 /**
  * Profile - the signed-in fraud analyst's own profile page.
  *
- * Shows who is operating the console (identity, team, shift, clearance) plus a
- * few live workload numbers pulled from the platform so the page reflects the
- * real state of the floor rather than static placeholders.
+ * Editable: the operator can update their identity fields inline; changes are
+ * persisted to localStorage so they survive reloads (there is no analyst-user
+ * backend in this build). Live workload numbers come from the platform.
  */
+const OPERATOR_KEY = "trustiq.operator.v1";
+const DEFAULT_OPERATOR = {
+  name: "Fraud Analyst",
+  role: "Senior Fraud & Identity-Trust Analyst",
+  team: "Identity Trust SOC",
+  employeeId: "BOB-SOC-2026",
+  email: "fraud.soc@bankofbaroda.in",
+  phone: "+91 22 6698 0000",
+  location: "Mumbai · BKC Operations Hub",
+  shift: "Day shift · 09:00 – 18:00 IST",
+  clearance: "Tier 3 · Fraud Operations"
+};
+function loadOperator() {
+  try {
+    const raw = localStorage.getItem(OPERATOR_KEY);
+    if (raw) return {
+      ...DEFAULT_OPERATOR,
+      ...JSON.parse(raw)
+    };
+  } catch (e) {}
+  return {
+    ...DEFAULT_OPERATOR
+  };
+}
 function Profile() {
   const {
     api,
     Icon,
-    useCountUp,
-    timeAgo
+    useCountUp
   } = window.TrustIQ;
-
-  // The operator currently signed in to the SOC console.
-  const operator = {
-    name: "Fraud Analyst",
-    role: "Senior Fraud & Identity-Trust Analyst",
-    team: "Identity Trust SOC",
-    employeeId: "BOB-SOC-2026",
-    email: "fraud.soc@bankofbaroda.in",
-    location: "Mumbai · BKC Operations Hub",
-    shift: "Day shift · 09:00 – 18:00 IST",
-    clearance: "Tier 3 · Fraud Operations"
-  };
+  const [operator, setOperator] = React.useState(loadOperator);
+  const [editing, setEditing] = React.useState(false);
+  const [draft, setDraft] = React.useState(operator);
+  const [saved, setSaved] = React.useState(false);
   const [stats, setStats] = React.useState(null);
   const [passports, setPassports] = React.useState([]);
   React.useEffect(() => {
@@ -2291,8 +2395,34 @@ function Profile() {
       clearInterval(id);
     };
   }, []);
+  const startEdit = () => {
+    setDraft(operator);
+    setEditing(true);
+    setSaved(false);
+  };
+  const cancelEdit = () => {
+    setEditing(false);
+    setDraft(operator);
+  };
+  const change = k => e => setDraft(d => ({
+    ...d,
+    [k]: e.target.value
+  }));
+  const save = () => {
+    const next = {
+      ...draft,
+      name: (draft.name || "").trim() || "Fraud Analyst"
+    };
+    setOperator(next);
+    try {
+      localStorage.setItem(OPERATOR_KEY, JSON.stringify(next));
+    } catch (e) {}
+    setEditing(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2600);
+  };
 
-  // Derive live workload numbers from whatever the platform reports.
+  // Live workload numbers derived from whatever the platform reports.
   const monitored = passports.length;
   const needsReview = passports.filter(p => p.trust_score < 60).length;
   const decisions = stats ? stats.total_events || stats.total_decisions || stats.events_today || 0 : 0;
@@ -2322,30 +2452,42 @@ function Profile() {
     label: "Open alerts",
     desc: "Awaiting triage"
   }];
-  const details = [{
+  const fields = [{
+    key: "name",
+    icon: "user",
+    label: "Full name"
+  }, {
+    key: "role",
+    icon: "briefcase",
+    label: "Role"
+  }, {
+    key: "employeeId",
     icon: "id-card",
-    name: "Employee ID",
-    value: operator.employeeId
+    label: "Employee ID"
   }, {
+    key: "email",
     icon: "mail",
-    name: "Email",
-    value: operator.email
+    label: "Email"
   }, {
+    key: "phone",
+    icon: "phone",
+    label: "Phone"
+  }, {
+    key: "team",
     icon: "users",
-    name: "Team",
-    value: operator.team
+    label: "Team"
   }, {
+    key: "location",
     icon: "map-pin",
-    name: "Location",
-    value: operator.location
+    label: "Location"
   }, {
+    key: "shift",
     icon: "clock",
-    name: "Shift",
-    value: operator.shift
+    label: "Shift"
   }, {
+    key: "clearance",
     icon: "shield-check",
-    name: "Clearance",
-    value: operator.clearance
+    label: "Clearance"
   }];
   const permissions = [{
     name: "View customer passports",
@@ -2368,11 +2510,15 @@ function Profile() {
     detail: "Change scoring weights and thresholds.",
     on: false
   }];
-  const initials = operator.name.split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
+  const initials = (operator.name || "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
   return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     className: "ops-banner"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "profile-head"
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: "1rem"
+    }
   }, /*#__PURE__*/React.createElement("span", {
     className: "profile-avatar"
   }, initials), /*#__PURE__*/React.createElement("div", {
@@ -2381,11 +2527,26 @@ function Profile() {
     className: "ops-banner-title"
   }, operator.name), /*#__PURE__*/React.createElement("div", {
     className: "ops-banner-sub"
-  }, operator.role, " \xB7 ", operator.team))), /*#__PURE__*/React.createElement("span", {
+  }, operator.role, " \xB7 ", operator.team))), /*#__PURE__*/React.createElement("div", {
+    className: "panel-actions"
+  }, saved && /*#__PURE__*/React.createElement("span", {
     className: "pill pill--safe"
   }, /*#__PURE__*/React.createElement("span", {
     className: "pill-dot dot--safe"
-  }), " On shift")), /*#__PURE__*/React.createElement("div", {
+  }), " Saved"), !editing ? /*#__PURE__*/React.createElement("button", {
+    className: "btn btn--primary",
+    onClick: startEdit
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "pencil",
+    size: 15
+  }), " Edit profile") : /*#__PURE__*/React.createElement("span", {
+    className: "pill pill--accent"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "pill-dot dot--neutral",
+    style: {
+      background: "var(--accent)"
+    }
+  }), " Editing"))), /*#__PURE__*/React.createElement("div", {
     className: "section"
   }, /*#__PURE__*/React.createElement("div", {
     className: "grid grid-4"
@@ -2404,24 +2565,62 @@ function Profile() {
   }, /*#__PURE__*/React.createElement(Icon, {
     name: "user",
     size: 18,
-    color: "#2563EB"
-  }), " Operator details")), /*#__PURE__*/React.createElement("div", {
+    color: "var(--accent)"
+  }), " Operator details"), editing && /*#__PURE__*/React.createElement("div", {
+    className: "panel-actions"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "btn",
+    onClick: cancelEdit
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "x",
+    size: 15
+  }), " Cancel"), /*#__PURE__*/React.createElement("button", {
+    className: "btn btn--primary",
+    onClick: save
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "check",
+    size: 15
+  }), " Save changes"))), editing ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "profile-form"
+  }, fields.map(f => /*#__PURE__*/React.createElement("div", {
+    key: f.key,
+    className: "form-field"
+  }, /*#__PURE__*/React.createElement("label", null, f.label), /*#__PURE__*/React.createElement("input", {
+    className: "input",
+    value: draft[f.key] || "",
+    onChange: change(f.key),
+    placeholder: DEFAULT_OPERATOR[f.key]
+  })))), /*#__PURE__*/React.createElement("div", {
+    className: "form-actions"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "btn btn--primary",
+    onClick: save
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "check",
+    size: 15
+  }), " Save changes"), /*#__PURE__*/React.createElement("button", {
+    className: "btn",
+    onClick: cancelEdit
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "x",
+    size: 15
+  }), " Cancel"))) : /*#__PURE__*/React.createElement("div", {
     className: "control-list"
-  }, details.map(d => /*#__PURE__*/React.createElement("div", {
-    key: d.name,
+  }, fields.map(f => /*#__PURE__*/React.createElement("div", {
+    key: f.key,
     className: "control-row"
   }, /*#__PURE__*/React.createElement("span", {
     className: "control-status control-status--safe"
   }, /*#__PURE__*/React.createElement(Icon, {
-    name: d.icon,
+    name: f.icon,
     size: 16
   })), /*#__PURE__*/React.createElement("div", {
     className: "control-body"
   }, /*#__PURE__*/React.createElement("div", {
     className: "control-name"
-  }, d.name), /*#__PURE__*/React.createElement("div", {
+  }, f.label), /*#__PURE__*/React.createElement("div", {
     className: "control-detail"
-  }, d.value))))))), /*#__PURE__*/React.createElement("div", {
+  }, operator[f.key] || "—"))))))), /*#__PURE__*/React.createElement("div", {
     className: "section"
   }, /*#__PURE__*/React.createElement("div", {
     className: "panel"
@@ -2432,7 +2631,7 @@ function Profile() {
   }, /*#__PURE__*/React.createElement(Icon, {
     name: "lock",
     size: 18,
-    color: "#2563EB"
+    color: "var(--accent)"
   }), " Access & permissions"), /*#__PURE__*/React.createElement("span", {
     className: "panel-hint",
     style: {
@@ -2520,6 +2719,7 @@ function Dashboard() {
   const [selectedCustomer, setSelectedCustomer] = React.useState(null);
   const [audit, setAudit] = React.useState([]);
   const [token, setToken] = React.useState(null);
+  const [collapsed, setCollapsed] = React.useState(false);
   const NAV = [{
     key: "overview",
     label: "Accounts",
@@ -2592,22 +2792,28 @@ function Dashboard() {
     desc: "Full account view"
   } : NAV.find(n => n.key === nav);
   return /*#__PURE__*/React.createElement("div", {
-    className: "app"
+    className: `app ${collapsed ? "nav-collapsed" : ""}`
   }, /*#__PURE__*/React.createElement("aside", {
     className: "sidebar"
   }, /*#__PURE__*/React.createElement("div", {
     className: "sidebar-logo"
   }, /*#__PURE__*/React.createElement("div", {
     className: "logo-mark"
-  }, /*#__PURE__*/React.createElement(Icon, {
-    name: "shield-check",
-    size: 22,
-    color: "#fff"
+  }, /*#__PURE__*/React.createElement("img", {
+    src: "logo.jpeg",
+    alt: "TrustIQ"
   })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     className: "logo-title"
   }, "TrustIQ"), /*#__PURE__*/React.createElement("div", {
     className: "logo-sub"
-  }, "Bank of Baroda \xB7 Operations"))), /*#__PURE__*/React.createElement("div", {
+  }, "Bank of Baroda \xB7 Operations"))), /*#__PURE__*/React.createElement("button", {
+    className: "sidebar-collapse",
+    onClick: () => setCollapsed(c => !c),
+    title: collapsed ? "Expand" : "Collapse"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: collapsed ? "chevrons-right" : "chevrons-left",
+    size: 16
+  }), /*#__PURE__*/React.createElement("span", null, collapsed ? "" : "Collapse")), /*#__PURE__*/React.createElement("div", {
     className: "nav-label"
   }, "Menu"), /*#__PURE__*/React.createElement("nav", {
     className: "nav"

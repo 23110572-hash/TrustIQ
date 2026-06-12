@@ -16,6 +16,7 @@ function Dashboard() {
   const [selectedCustomer, setSelectedCustomer] = React.useState(null);
   const [audit, setAudit] = React.useState([]);
   const [token, setToken] = React.useState(null);
+  const [collapsed, setCollapsed] = React.useState(false);
 
   const NAV = [
     { key: "overview",   label: "Accounts", desc: "Command center", icon: "layout-dashboard" },
@@ -49,15 +50,21 @@ function Dashboard() {
     : NAV.find((n) => n.key === nav);
 
   return (
-    <div className="app">
+    <div className={`app ${collapsed ? "nav-collapsed" : ""}`}>
       <aside className="sidebar">
         <div className="sidebar-logo">
-          <div className="logo-mark"><Icon name="shield-check" size={22} color="#fff" /></div>
+          <div className="logo-mark"><img src="logo.jpeg" alt="TrustIQ" /></div>
           <div>
             <div className="logo-title">TrustIQ</div>
             <div className="logo-sub">Bank of Baroda · Operations</div>
           </div>
         </div>
+
+        <button className="sidebar-collapse" onClick={() => setCollapsed((c) => !c)}
+          title={collapsed ? "Expand" : "Collapse"}>
+          <Icon name={collapsed ? "chevrons-right" : "chevrons-left"} size={16} />
+          <span>{collapsed ? "" : "Collapse"}</span>
+        </button>
 
         <div className="nav-label">Menu</div>
         <nav className="nav">

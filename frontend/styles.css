@@ -1026,13 +1026,16 @@ html, body {
   border-right: 1px solid var(--border-soft);
   transition: width 280ms var(--ease);
 }
-.sidebar-logo { padding: 1.15rem 1.1rem 1rem; gap: 0.7rem; align-items: center; }
+.sidebar-logo { padding: 1.15rem 1.1rem 1rem; gap: 0.7rem; align-items: center; justify-content: center; }
 .logo-mark {
-  height: 40px; width: 40px; border-radius: 11px; overflow: hidden;
-  background: var(--bg-surface); box-shadow: var(--shadow-sm); padding: 0;
-  border: 1px solid var(--border-soft);
+  height: auto; width: 100%; max-width: 190px; border-radius: 0; overflow: hidden;
+  background: transparent; box-shadow: none; padding: 0; border: none;
 }
-.logo-mark img { height: 100%; width: 100%; object-fit: cover; display: block; }
+.logo-mark img {
+  height: auto; width: 100%; object-fit: contain; display: block;
+  /* Drop the logo's light backing so it blends into the sidebar surface. */
+  mix-blend-mode: multiply;
+}
 .logo-title { font-size: 1.3rem; font-weight: 800; letter-spacing: -0.03em; }
 .logo-sub { font-size: 0.68rem; color: var(--text-tertiary); letter-spacing: 0.02em; }
 

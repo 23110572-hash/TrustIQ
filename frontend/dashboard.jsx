@@ -53,11 +53,7 @@ function Dashboard() {
     <div className={`app ${collapsed ? "nav-collapsed" : ""}`}>
       <aside className="sidebar">
         <div className="sidebar-logo">
-          <div className="logo-mark"><img src="logo.jpeg" alt="TrustIQ" /></div>
-          <div>
-            <div className="logo-title">TrustIQ</div>
-            <div className="logo-sub">Bank of Baroda · Operations</div>
-          </div>
+          <div className="logo-mark"><img src="logo.jpeg" alt="Bank of Baroda" /></div>
         </div>
 
         <button className="sidebar-collapse" onClick={() => setCollapsed((c) => !c)}

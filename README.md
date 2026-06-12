@@ -166,32 +166,32 @@ used automatically when no Gemini key is set.
 ## 5. Architecture
 
 ```
-        ┌─────────────────────────────────────────────────────────────┐
+        ┌──────────────────────────────────────────────────────────────┐
         │              BANK OF BARODA — CORE SIMULATOR                 │
         │   10 real customer accounts · what a normal customer sees    │
         │   sign in · transfer · add payee · change profile · recover  │
-        └───────────────────────────┬─────────────────────────────────┘
+        └────────────────────────────┬─────────────────────────────────┘
                                      │ POST /api/action  (per customer action)
                                      ▼  calls TrustIQ over the X-API-Key
-        ┌─────────────────────────────────────────────────────────────┐
+        ┌───────────────────────────────────────────────────────────────┐
         │   POST /api/trust/evaluate  ──►  TRUST ORCHESTRATOR           │
-        │                                      │                       │
-        │   ┌──────────┬───────────┬───────────┼───────────┬────────┐  │
-        │   ▼          ▼           ▼           ▼           ▼        ▼  │
+        │                                      │                        │
+        │   ┌──────────┬───────────┬───────────┼───────────┬────────┐   │
+        │   ▼          ▼           ▼           ▼           ▼        ▼   │
         │ risk_      identity_   identity_   impossible_ beneficiary ai_│
         │ engine     passport    trust       travel      trust    analyst
-        │   │                                                          │
+        │   │                                                           │
         │   ├─ behavioral · device_fingerprint · anomaly_detector       │
         │   ├─ identity_graph (fraud rings) · channel_trust             │
         │   └─ compliance · liveness_challenge · privacy · audit · JWT  │
-        └───────────────┬───────────────────────────┬──────────────────┘
+        └───────────────┬────────────────────────────┬──────────────────┘
                         ▼                            ▼
-              ┌──────────────────┐         ┌────────────────────┐
+              ┌──────────────────┐         ┌─────────────────────┐
               │   FRAUD SOC UI   │         │   NEON POSTGRES     │
               │ (React command   │         │ bank_accounts ·     │
               │  center, alerts, │         │ bank_activity ·     │
               │  rings, history) │         │ bank_verify_sessions│
-              └──────────────────┘         └────────────────────┘
+              └──────────────────┘         └─────────────────────┘
         Redis (real-time trust/sessions/geo) + Postgres (audit) — both
         optional at runtime; in-memory fallbacks keep the demo zero-dependency.
 

@@ -2711,7 +2711,7 @@ function Dashboard() {
   }, /*#__PURE__*/React.createElement("div", {
     className: "logo-mark"
   }, /*#__PURE__*/React.createElement("img", {
-    src: "logo.jpeg",
+    src: "logo.png",
     alt: "Bank of Baroda"
   }))), /*#__PURE__*/React.createElement("button", {
     className: "sidebar-collapse",

@@ -8,12 +8,12 @@
 const OPERATOR_KEY = "trustiq.operator.v1";
 
 const DEFAULT_OPERATOR = {
-  name: "Fraud Analyst",
+  name: "Krishna Agrawal",
   role: "Senior Fraud & Identity-Trust Analyst",
   team: "Identity Trust SOC",
   employeeId: "BOB-SOC-2026",
-  email: "fraud.soc@bankofbaroda.in",
-  phone: "+91 22 6698 0000",
+  email: "Krishnaagrawal0706@gmail.com",
+  phone: "+91 7447020046",
   location: "Mumbai · BKC Operations Hub",
   shift: "Day shift · 09:00 – 18:00 IST",
   clearance: "Tier 3 · Fraud Operations",
